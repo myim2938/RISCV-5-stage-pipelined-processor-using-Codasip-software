@@ -1,0 +1,584 @@
+
+
+#include "ca_defines.hcodal"
+#include "opcodes.hcodal"
+#include "config.hcodal"
+#include "debug.hcodal"
+
+
+
+set isa_hw = i_hw_halt,
+                   i_hw_alu_i,
+                   i_hw_alu,
+                   i_hw_shift,
+                   i_hw_branch,
+                   i_hw_jal,
+                   i_hw_jalr,
+                   i_hw_load,
+                   i_hw_store,
+                   i_hw_upper_imm;
+
+
+
+
+
+
+
+
+element i_hw_halt
+{
+    use opc_halt as opc;
+
+    assembler { opc };
+    binary { opc };
+
+    semantics
+    {
+
+
+        s_id_mux_imm=ITYPE_IMM12;
+
+        s_idex_MemWrite = DONT_CARE;
+        s_idex_RegWrite =DONT_CARE;
+        s_idex_MemtoReg = WE_FALSE;
+        s_idex_MemRead=DONT_CARE;
+        s_exmem_Branch = DONT_CARE;
+
+          r_idex_ALUSrc1 = DONT_CARE;
+          r_idex_ALUSrc2 = DONT_CARE;
+          s_idex_memop = MEM_NOP;
+          s_id_pipe_mux = DONT_CARE;
+
+        // Operations
+        switch (opc)
+        {
+            case OPC_NOP:
+                s_idex_alu_ops = ALU_NOP;
+                break;
+
+            case OPC_HALT:
+                s_idex_alu_ops = ALU_NOP;
+                break;
+
+            default:
+                codasip_assert(false, "Default case: %d\n", opc);
+                break;
+        }
+
+
+    };
+};
+
+
+
+
+
+//iType
+
+
+element i_hw_alu_i
+{
+    use opc_alu_i as opc;
+    assembler { opc };
+    binary { opc };
+
+    semantics
+    {
+
+        s_id_mux_imm=ITYPE_IMM12;
+        s_idex_RegWrite = ASSERT;
+
+        s_idex_ALUSrc1 =SRC_A_XPR;
+        s_idex_ALUSrc2 = SRC_B_IMM;
+
+        s_id_pipe_mux = ALU_PIPELINE;
+        switch (opc)
+                {
+
+
+
+                    case OPC_ADDI:
+                        s_idex_alu_ops = ALU_ADD;
+                        break;
+                    case OPC_SLTI:
+                        s_idex_alu_ops = ALU_SLT;
+                        break;
+                    case OPC_SLTIU:
+                        s_idex_alu_ops = ALU_SLTU;
+                        break;
+
+                    case OPC_ANDI:
+                         s_idex_alu_ops = ALU_AND;
+                         break;
+                    case OPC_ORI:
+                        s_idex_alu_ops = ALU_OR;
+                        break;
+                    case OPC_XORI:
+                        s_idex_alu_ops = ALU_XOR;
+                        break;
+                    default:
+                        s_idex_alu_ops = ALU_NOP;
+                        codasip_assert(false, "Default case: %d\n", opc);
+                        break;
+                }
+    };
+};
+
+
+
+
+
+
+
+// -------------------------------------------------------------
+// Rtype  instructions
+// -------------------------------------------------------------
+
+
+element i_hw_alu
+{
+    use opc_alu as opc;
+    assembler { opc };
+    binary { opc };
+
+    semantics
+    {
+
+
+        s_idex_MemWrite = DONT_CARE;
+        s_idex_RegWrite =ASSERT;
+        s_idex_MemtoReg = WE_FALSE;
+        s_idex_MemRead=DONT_CARE;
+        s_exmem_Branch=DEASSERT;
+
+
+        s_idex_ALUSrc1 =SRC_A_XPR;
+        s_idex_ALUSrc2 = SRC_B_XPR;
+        s_id_pipe_mux = ALU_PIPELINE;
+
+        s_idex_memop = MEM_NOP;
+        switch (opc)
+                {
+                    case OPC_ADD:
+                        s_idex_alu_ops = ALU_ADD;
+                        codasip_print(0, "ADDI OPC REACHED!\n");
+                        break;
+
+                    case OPC_SLT:
+                        s_idex_alu_ops = ALU_SLT;
+                        break;
+
+                    case OPC_SLTU:
+                        s_idex_alu_ops = ALU_SLTU;
+                        break;
+
+                    case OPC_AND:
+                        s_idex_alu_ops = ALU_AND;
+                        break;
+
+                    case OPC_OR:
+                        s_idex_alu_ops = ALU_OR;
+                        break;
+
+                    case OPC_XOR:
+                        s_idex_alu_ops = ALU_XOR;
+                        break;
+                    case OPC_SLL:
+                        s_idex_alu_ops = ALU_SLL;
+                        break;
+                    case OPC_SRL:
+                        s_idex_alu_ops = ALU_SRL;
+                        break;
+
+                    case OPC_SUB:
+                        s_idex_alu_ops = ALU_SUB;
+                        break;
+                    case OPC_SRA:
+                        s_idex_alu_ops = ALU_SRA;
+                        break;
+
+
+
+                    default:
+                        s_idex_alu_ops = ALU_NOP;
+                        codasip_print(0, "ADDI NOT REACHED :(\n");
+                        codasip_assert(false, "Default case: %d\n", opc);
+                        break;
+                }
+    };
+};
+
+
+
+
+
+
+
+// -------------------------------------------------------------
+// Shift Immediate instruction
+// -------------------------------------------------------------
+
+
+element i_hw_shift
+{
+    use opc_shift as opc;
+       assembler { opc };
+       binary { opc };
+
+       semantics
+       {
+
+           s_id_mux_imm=ITYPE_IMM12;
+           s_idex_RegWrite = ASSERT;
+
+           s_idex_ALUSrc1 =SRC_A_XPR;
+           s_idex_ALUSrc2 = SRC_B_IMM;
+           s_id_pipe_mux = ALU_PIPELINE;
+
+
+           switch(opc){
+                case OPC_SLLI:
+                    s_idex_alu_ops = ALU_SLL;
+                    break;
+
+                case OPC_SRLI:
+                    s_idex_alu_ops = ALU_SRL;
+                    break;
+
+                case OPC_SRAI:
+                    s_idex_alu_ops = ALU_SRA;
+                    break;
+
+           }
+
+
+};
+};
+
+
+
+
+
+// -------------------------------------------------------------
+// Conditional branch instruction
+// -------------------------------------------------------------
+
+element i_hw_branch
+{
+    use opc_branch as opc;
+
+
+    assembler {opc};
+    binary {opc};
+
+    semantics
+    {
+        s_id_mux_imm= BTYPE_IMM12 ;
+
+               s_idex_MemWrite = DONT_CARE;
+               s_idex_RegWrite =DEASSERT;
+               s_idex_MemtoReg = WE_FALSE;
+               s_idex_MemRead=DONT_CARE;
+
+               s_exmem_Branch=ASSERT;
+
+               s_id_pipe_mux = DONT_CARE;
+
+               s_idex_ALUSrc1 =SRC_A_XPR;
+               s_idex_ALUSrc2 = SRC_B_XPR;
+
+               // mem stage
+               s_idex_memop = MEM_NOP;
+
+               switch (opc)
+               {
+                   case OPC_BEQ:
+                       s_idex_alu_ops = ALU_EQ;
+                       break;
+                   case OPC_BNE:
+                       s_idex_alu_ops = ALU_NEQ;
+                       break;
+                   case OPC_BLT:
+                       s_idex_alu_ops = ALU_SLT;
+                       break;
+                   case OPC_BLTU:
+                       s_idex_alu_ops = ALU_ULT;
+                       break;
+                   case OPC_BGE:
+                        s_idex_alu_ops = ALU_SGTE;
+                        break;
+                   case OPC_BGEU:
+                        s_idex_alu_ops = ALU_UGTE;
+                        break;
+
+                       default:
+                       codasip_assert(false, "Default case: %d\n", opc);
+                       break;
+               }
+
+
+    };
+};
+
+
+
+
+
+
+
+// -------------------------------------------------------------
+// Jump and Link instruction
+// -------------------------------------------------------------
+
+
+element i_hw_jal
+{
+    use opc_jal as opc;
+
+
+    assembler { opc };
+    binary { opc };
+
+    semantics
+    {
+
+        s_id_mux_imm= JTYPE_IMM20 ;
+
+                     s_idex_MemWrite = DONT_CARE;
+                     s_idex_RegWrite =ASSERT;
+                     s_idex_MemtoReg = WE_FALSE;
+                     s_idex_MemRead=DONT_CARE;
+
+
+                     s_id_pipe_mux = PC_PIPELINE;
+
+                     s_idex_ALUSrc1 =SRC_A_PC;
+                     s_idex_ALUSrc2 = SRC_B_IMM;
+
+                     // mem stage
+                     s_idex_memop = MEM_NOP;
+
+
+                     s_jump = ASSERT;
+        s_idex_alu_ops = ALU_ADD;
+
+
+
+
+    };
+};
+
+
+// -------------------------------------------------------------
+// Jump and Link Register instruction
+// -------------------------------------------------------------
+
+
+
+element i_hw_jalr
+{
+    use opc_jalr as opc;
+
+
+    assembler { opc };
+    binary {opc};
+
+    semantics
+    {
+        s_id_mux_imm= JTYPE_IMM20 ;
+
+                            s_idex_MemWrite = DONT_CARE;
+                            s_idex_RegWrite =ASSERT;
+                            s_idex_MemtoReg = WE_FALSE;
+                            s_idex_MemRead=DONT_CARE;
+
+                            s_id_pipe_mux = PC_PIPELINE;
+
+
+                            s_idex_ALUSrc1 =SRC_A_XPR;
+                            s_idex_ALUSrc2 = SRC_B_IMM;
+
+
+                            s_idex_memop = MEM_NOP;
+
+
+                            s_jump = ASSERT;
+               s_idex_alu_ops = ALU_ADD;
+
+
+    };
+};
+
+
+
+// -------------------------------------------------------------
+// load  instructions
+// -------------------------------------------------------------
+
+
+
+
+
+element i_hw_load
+{
+    use opc_load as opc;
+    assembler { opc };
+    binary { opc };
+
+    semantics
+    {
+        s_id_mux_imm=ITYPE_IMM12 ;
+
+
+        s_idex_MemWrite = DEASSERT;
+        s_idex_RegWrite =ASSERT;
+        s_idex_MemtoReg = WE_TRUE;
+        s_idex_MemRead=ASSERT;
+
+
+
+        s_idex_ALUSrc1 =SRC_A_XPR;
+        s_idex_ALUSrc2 = SRC_B_IMM;
+        s_idex_alu_ops = ALU_ADD;
+
+        s_id_pipe_mux = LOAD_PIPELINE;
+
+
+        switch (opc)
+                {
+
+            case OPC_LB:
+                s_idex_memop =MEM_LB;
+                break;
+            case  OPC_LH:
+                s_idex_memop =MEM_LH;
+                break;
+            case  OPC_LW :
+                s_idex_memop =MEM_LW;
+                break;
+            case OPC_LBU  :
+                s_idex_memop =MEM_LBU;
+                break;
+            case OPC_LHU :
+                s_idex_memop =MEM_LHU;
+                break;
+
+
+             default:
+                codasip_assert(false, "Default case: %d\n", opc);
+                break;
+
+
+                }
+    };
+};
+
+
+
+
+
+// -------------------------------------------------------------
+// store
+// -------------------------------------------------------------
+
+element i_hw_store
+{
+    use opc_store as opc;
+
+    assembler { opc };
+    binary { opc };
+
+    semantics
+    {
+        s_id_mux_imm=STYPE_IMM12 ;
+
+
+        s_idex_MemWrite = ASSERT;
+        s_idex_RegWrite =DEASSERT;
+        s_idex_MemtoReg = WE_TRUE;
+        s_idex_MemRead=DEASSERT;
+
+        s_idex_ALUSrc1 =SRC_A_XPR;
+        s_idex_ALUSrc2 = SRC_B_IMM;
+        s_idex_alu_ops = ALU_ADD;
+        s_id_pipe_mux = DONT_CARE;
+
+        switch (opc)
+        {
+            case OPC_SW:
+                s_idex_memop = MEM_SW;
+                break;
+
+            case OPC_SH:
+                s_idex_memop = MEM_SH;
+                break;
+
+            case OPC_SB:
+                s_idex_memop = MEM_SB;
+                break;
+
+            default:
+                break;
+        }
+
+
+    };
+};
+
+
+
+
+
+// -------------------------------------------------------------
+// Upper Immediate instructions
+// -------------------------------------------------------------
+
+
+
+element i_hw_upper_imm
+{
+    use opc_upper_imm as opc;
+
+
+    assembler { opc};
+    binary { opc };
+
+    semantics
+    {
+
+        s_id_mux_imm=UTYPE_IMM20;
+
+
+                s_idex_MemWrite = DEASSERT;
+                s_idex_RegWrite =ASSERT;
+                s_idex_MemtoReg = WE_TRUE;
+                s_idex_MemRead=DEASSERT;
+                s_id_pipe_mux = ALU_PIPELINE;
+
+                s_idex_ALUSrc1 =SRC_A_XPR;
+                s_idex_ALUSrc2 = SRC_B_IMM;
+
+
+                switch (opc)
+                {
+                    case OPC_LUI:
+                        s_idex_alu_ops = ALU_LUI;
+                        break;
+
+                    case OPC_AUIPC:
+                        s_idex_alu_ops = ALU_AUIPC;
+                        break;
+
+
+                    default:
+                        break;
+                }
+
+    };
+};
+
+
+
+
+
+

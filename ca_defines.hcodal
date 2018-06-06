@@ -1,0 +1,117 @@
+
+#define IMM_mux_output  bitsizeof(enum s_id_gen)
+#define SRC_B_MUX_W  bitsizeof(enum src_b_mux)
+#define WB_SRC_MUX_W      bitsizeof(enum write_enable)
+#define ALU_OP_W        bitsizeof(enum alu_op)
+#define SRC_A_MUX_W     bitsizeof(enum src_a_mux)
+#define  Bit2ALUOp      bitsizeof(enum BITS_ALU_OP)
+#define MEM_OP_W        bitsizeof(enum mem_op)
+#define PIPE_MUX_W bitsizeof(enum pipe_mux)
+
+
+ enum s_id_gen{
+     ITYPE_IMM12,
+     BTYPE_IMM12,
+     STYPE_IMM12,
+     UTYPE_IMM20,
+     JTYPE_IMM20
+
+
+ };
+
+
+ enum write_enable
+ {
+     WE_FALSE,
+     WE_TRUE,
+     WE_FALSE_COND,
+     WE_TRUE_COND
+ };
+
+
+ enum src_a_mux
+ {
+     SRC_A_XPR,
+     SRC_A_PC
+ };
+
+
+ enum src_b_mux{
+     SRC_B_XPR,
+     SRC_B_IMM
+
+
+ };
+
+
+
+ enum mem_op
+ {
+     MEM_NOP,
+     MEM_SB,
+     MEM_SH,
+     MEM_SW,
+     MEM_LH,
+     MEM_LBU,
+     MEM_LHU,
+     MEM_LW,
+     MEM_LB,
+
+ };
+
+
+ enum alu_op
+ {
+     ALU_NOP,
+     ALU_MOV,
+     ALU_NEG,
+     ALU_ADD,
+     ALU_SUB,
+     ALU_MUL,
+     ALU_AND,
+     ALU_OR,
+     ALU_XOR,
+     ALU_SLL,
+     ALU_SRL,
+     ALU_SRA,
+     ALU_MOVHI,
+     ALU_EQ,
+     ALU_NEQ,
+     ALU_SLT,
+     ALU_SLTU,
+     ALU_ULT,
+     ALU_SLE,
+     ALU_ULE,
+     ALU_SRAI,
+     ALU_SRLI,
+     ALU_SLLI,
+     ALU_UGTE,
+     ALU_LUI,
+     ALU_AUIPC,
+     ALU_SGTE
+ };
+
+ enum BIT_ALU_OP{
+     STORE_LOAD,
+     branch,
+     RTYPE
+
+
+ };
+
+
+
+ enum pipe_mux
+ {
+ ALU_PIPELINE,
+ LOAD_PIPELINE,
+ PC_PIPELINE,
+ };
+
+ #define DONT_CARE 0
+ #define DEASSERT 0
+ #define ASSERT 1
+
+ #define NOP_INSTRUCTION 0u
+
+

@@ -1,0 +1,151 @@
+#include "ca_defines.hcodal"
+#include "opcodes.hcodal"
+#include "config.hcodal"
+#include "debug.hcodal"
+
+event mem : pipeline(pipe.MEM)
+{
+    use mem_output;
+
+    semantics
+    {
+        uint32  base_address;
+              uint2  base_offset;
+                uint3  byte_count;
+                uint3  request_cmd;
+
+                uint32 data_mem;
+
+                // Memory interface supports aligned access
+                      base_address = r_exmem_alu_output & BUS_MASK;
+                      base_offset = r_exmem_alu_output & ~BUS_MASK;
+
+
+                      switch (r_memwb_memop)
+                      {
+                          case MEM_NOP:
+                              request_cmd = CP_CMD_NONE;
+                              byte_count = 0;
+                              break;
+                              // load byte
+                          case MEM_LB:
+                              request_cmd = CP_CMD_READ;
+                              byte_count = 1;
+                              break;
+                          case MEM_LH:
+                              request_cmd = CP_CMD_READ;
+                              byte_count = 2;
+                              break;
+                          case MEM_LW:
+                              request_cmd = CP_CMD_READ;
+                              byte_count = 4;
+                              break;
+                          case MEM_LBU:
+                              request_cmd = CP_CMD_READ;
+                              byte_count = 1;
+                              break;
+                          case MEM_LHU:
+                              request_cmd = CP_CMD_READ;
+                              byte_count = 2;
+                              break;
+
+
+
+                          case MEM_SW:
+                              request_cmd = CP_CMD_WRITE;
+                              byte_count = 4;
+                              break;
+
+                          case MEM_SH:
+                              request_cmd = CP_CMD_WRITE;
+                              byte_count = 2;
+                              break;
+
+                          case MEM_SB:
+                              request_cmd = CP_CMD_WRITE;
+                              byte_count = 1;
+                              break;
+
+                          default:
+                              request_cmd = CP_CMD_NONE;
+                              byte_count = 0;
+                              break;
+                      }
+
+                      if (request_cmd == CP_CMD_WRITE)
+                          {
+                   if_data.request(CP_CMD_WRITE, base_address, base_offset, byte_count);
+                   if_data.finish(CP_CMD_WRITE, r_memwb_rs2_value);
+                   codasip_print(INFO_RF_WRITE, "Hi, Store working");
+
+                          }
+
+
+                      else       if (request_cmd == CP_CMD_READ)
+                       {
+
+                      if_data.finish(CP_CMD_READ, data_mem);
+
+
+
+                          r_mem_load = data_mem;
+
+                                              }
+
+
+
+
+
+    };
+
+        timing
+        {
+
+            mem_output();
+        };
+};
+event mem_output : pipeline(pipe.MEM)
+{
+    semantics
+    {
+
+
+        r_memwb_MemtoReg = r_exmem_MemtoReg;
+
+        r_memwb_alu_output = r_exmem_alu_output;
+
+        r_memwb_rd_index = r_exmem_rd_index;
+        r_memwb_rs1_index = r_exmem_rs1_index;
+        r_memwb_rs2_index = r_exmem_rs2_index;
+        r_memwb_alu_ops = r_exmem_alu_ops;
+        r_memwb_ALUSrc1 = r_exmem_ALUSrc1;
+        r_memwb_ALUSrc2 = r_exmem_ALUSrc2;
+
+        r_memwb_SrcA = r_exmem_SrcA;
+        r_memwb_SrcB = r_exmem_SrcB;
+
+        r_memwb_Branch = r_exmem_Branch;
+
+
+        r_memwb_rs2_value = r_exmem_rs2_value;
+        r_memwb_rs1_value = r_exmem_rs1_value;
+
+        r_memwb_pc = r_exmem_pc;
+        r_memwb_simm = r_exmem_simm;
+        r_memwb_Branch_Target_Address = r_exmem_Branch_Target_Address;
+        r_memwb_memop =   r_exmem_memop;
+
+        r_memwb_jump = r_exmem_jump;
+
+
+        r_memwb_pipe_mux = r_exmem_pipe_mux;
+
+        r_memwb_RegWrite = r_exmem_RegWrite;
+
+        r_wb_load = r_mem_load;
+        r_exmem_PCSrc = r_ex_PCSrc;
+
+        r_memwb_JUMB_Target_Address = r_exmem_JUMB_Target_Address;
+
+    };
+};

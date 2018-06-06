@@ -1,0 +1,69 @@
+#include "ca_defines.hcodal"
+#include "opcodes.hcodal"
+#include "debug.hcodal"
+
+////////////////////////// Write-Back Stage ///////////////////////////////////////
+
+event wb : pipeline(pipe.WB)
+{
+    use wb_output;
+
+    semantics
+    {
+
+
+        s_wb_stall = 0;
+    };
+
+    timing
+    {
+        wb_output();
+    };
+};
+
+
+event wb_output : pipeline(pipe.WB)
+{
+    semantics
+    {
+
+
+
+
+
+
+    switch (r_WB_pipe_mux)
+    {
+        case ALU_PIPELINE:
+            s_wb_result = r_memwb_alu_output;
+            break;
+        case LOAD_PIPELINE:
+            s_wb_result = r_mem_load;
+            codasip_info(INFO_RF_WRITE, "load working");
+
+            break;
+        case PC_PIPELINE:
+            s_wb_result = r_memwb_pc + 4;
+            break;
+    }
+
+
+
+    if(r_WB_RegWrite) {
+
+     rf_xpr[r_WB_rd_index] = s_wb_result;
+      codasip_info(INFO_RF_WRITE, "rf_xpr[%d] = 0x%x", r_WB_rd_index, s_wb_result);
+
+    }
+    r_WB_rd_index = r_memwb_rd_index;
+    r_WB_pipe_mux = r_memwb_pipe_mux;
+    r_WB_RegWrite = r_memwb_RegWrite;
+    r_wb_jump = r_memwb_jump;
+    r_wb_Branch_Target_Address = r_memwb_Branch_Target_Address;
+
+    r_wb_PCSrc = r_exmem_PCSrc;
+    r_memwb_JUMB_Target_Address =r_memwb_JUMB_Target_Address;
+  // rf_xpr[r_memwb_rd_index] = s_wb_load;
+
+    };
+};

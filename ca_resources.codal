@@ -1,0 +1,340 @@
+
+
+
+
+#include "ca_defines.hcodal"
+#include "config.hcodal"
+#include "debug.hcodal"
+
+pipeline pipe
+{
+    FE,
+    ID,
+    EX,
+    MEM,
+    WB
+};
+
+
+
+
+
+//------------------------------
+// Pipeline register (IF/ID)
+//-----------------------------
+
+ register bit [MWORD_W]   r_ifid_inst{pipeline =pipe.FE;};
+ register bit [MADDR_W]   r_ifid_pc {pipeline =pipe.FE;};
+ signal bit [MWORD_W]     s_ifid_inst;
+ register bit[1] PCSrc;
+ register bit[1] r_ex_PCSrc;
+ register bit[1] r_exmem_PCSrc;
+ register bit[1] r_wb_PCSrc;
+
+
+
+ //*******************************
+ // pipeline register (ID/EX)
+ //******************************
+
+
+ register bit [MADDR_W]             r_idex_pc                   {pipeline =pipe.ID;};
+
+
+ register bit [RF_XPR_W]            r_idex_rs1_index            {pipeline = pipe.ID;};
+ signal bit [RF_XPR_W]  s_rs1;
+
+
+ register bit [1]            r_idex_jump            {pipeline = pipe.ID;};
+  signal bit [1]  s_jump;
+
+  register bit [PIPE_MUX_W]            r_idex_pipe_mux            {pipeline = pipe.ID;};
+  signal bit[PIPE_MUX_W] s_id_pipe_mux;
+
+
+ register bit [RF_XPR_W]            r_idex_rs2_index            {pipeline = pipe.ID;};
+ signal bit [RF_XPR_W] s_rs2;
+
+ register bit [RF_XPR_W]            r_idex_rd_index            {pipeline =pipe.ID;};
+ signal bit [RF_XPR_W] S_rd;
+
+ signal bit [RTYPE_OPC_W]  s_id_opc_full;
+
+
+ register bit [MADDR_W]             r_idex_rs1_value           {pipeline =pipe.ID;};
+ register bit [MADDR_W]             r_idex_rs2_value           {pipeline =pipe.ID;};
+ register bit [MADDR_W]             r_idex_simm                {pipeline =pipe.ID;};
+
+ register bit [MADDR_W]             r_idex_SrcA                {pipeline =pipe.ID;};
+ register bit [MADDR_W]             r_idex_SrcB                {pipeline =pipe.ID;};
+
+
+
+
+ signal bit[MADDR_W]                      s_id_rs1_value;
+ signal bit[MADDR_W]                      s_id_rs2_value;
+
+
+ register bit [ALU_OP_W]            r_idex_alu_ops          {pipeline =pipe.ID;};
+ signal bit [ALU_OP_W]              s_idex_alu_ops;
+
+ register bit [CNTL_BIT_W]          r_idex_RegWrite         {pipeline =pipe.ID;};
+ signal bit [CNTL_BIT_W]             s_idex_RegWrite;
+
+
+ register bit [WB_SRC_MUX_W]         r_idex_MemtoReg         {pipeline =pipe.ID;};
+ signal bit [WB_SRC_MUX_W]           s_idex_MemtoReg ;
+
+
+ register bit [CNTL_BIT_W]          r_idex_MemRead          {pipeline =pipe.ID;};
+ signal bit [CNTL_BIT_W]            s_idex_MemRead;
+
+
+ register bit [CNTL_BIT_W]          r_idex_MemWrite            {pipeline =pipe.ID;};
+ signal bit [CNTL_BIT_W]            s_idex_MemWrite ;
+
+ // Input 1
+ register bit [SRC_A_MUX_W]                r_idex_ALUSrc1          {pipeline =pipe.ID;};
+ signal bit   [SRC_A_MUX_W]              s_idex_ALUSrc1 ;
+
+
+ register bit [1]                r_idex_Branch          {pipeline =pipe.ID;};
+
+
+ // Input 2
+ register bit [SRC_B_MUX_W]              r_idex_ALUSrc2          {pipeline =pipe.ID;};
+ signal bit   [SRC_B_MUX_W]              s_idex_ALUSrc2 ;
+ // mux_Imm gen
+ signal bit  [IMM_mux_output]   s_id_mux_imm;
+
+
+
+ /// decode signals
+ signal bit [7] s_id_funct7;
+ signal bit [3] s_id_funct3;
+ signal bit [7] s_id_opc;
+ signal bit [12] s_id_stype_imm12;
+ signal bit [12] s_id_itype_imm12;
+ signal bit [12]s_id_btype_imm12;
+ signal bit [20]s_id_utype_imm20;
+ signal bit [20]s_id_jtype_imm20;
+
+
+ signal  bit[MEM_OP_W]      s_idex_memop;
+ register bit[MEM_OP_W]     r_idex_memop    { pipeline = pipe.ID; };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ // memtoreg
+ register bit [WB_SRC_MUX_W]         r_exmem_MemtoReg         {pipeline =pipe.EX;};
+ //memwrite
+ register bit [CNTL_BIT_W]           r_exmem_MemWrite         {pipeline =pipe.EX;};
+//memread
+ register bit [CNTL_BIT_W]           r_exmem_MemRead          {pipeline =pipe.EX;};
+ //regwrite
+ register bit [CNTL_BIT_W]           r_exmem_RegWrite         {pipeline =pipe.EX;};
+
+ //branch
+ register bit [CNTL_BIT_W]           r_exmem_Branch       { pipeline = pipe.EX; };
+
+signal bit[CNTL_BIT_W] s_exmem_Branch;
+
+ //excution output
+ register bit [MWORD_W]              r_exmem_alu_output       { pipeline = pipe.EX; };
+ signal bit   [MADDR_W]              s_ex_alu_output;
+
+ register bit [PIPE_MUX_W]            r_exmem_pipe_mux            {pipeline = pipe.EX;};
+
+
+ // instrction index(pc)
+ register bit [MADDR_W]              r_exmem_pc               { pipeline = pipe.EX; };
+ register bit [32]  r_wb_result;
+
+ register bit [32] r_mem_load    { pipeline = pipe.MEM; };
+ register bit [32] r_wb_load    { pipeline = pipe.WB; };
+
+ register bit [32] r_ex_load    { pipeline = pipe.EX; };
+
+
+ // Rd index
+ register bit [RF_XPR_W]             r_exmem_rd_index     { pipeline = pipe.EX; };
+ register bit [RF_XPR_W]             r_exmem_rs1_index     { pipeline = pipe.EX; };
+ register bit [RF_XPR_W]             r_exmem_rs2_index     { pipeline = pipe.EX; };
+
+ register bit [ALU_OP_W]            r_exmem_alu_ops          {pipeline =pipe.EX;};
+//immediate
+ register bit [MADDR_W]             r_exmem_simm                {pipeline =pipe.EX;};
+
+
+ register bit [SRC_B_MUX_W]              r_exmem_ALUSrc1          {pipeline =pipe.EX;};
+ register bit [SRC_B_MUX_W]              r_exmem_ALUSrc2          {pipeline =pipe.EX;};
+
+ register bit [MADDR_W]             r_exmem_SrcA                {pipeline =pipe.EX;};
+ register bit [MADDR_W]             r_exmem_SrcB                {pipeline =pipe.EX;};
+
+
+
+
+
+
+
+ //Zero output
+ register bit [1]                    r_exmem_zero_out        { pipeline = pipe.EX; };
+ signal bit [1]                      s_ex_zero_out;
+
+
+ register bit [32]                   r_exmem_rs2_value         { pipeline = pipe.EX; };
+ register bit [32]                   r_exmem_rs1_value         { pipeline = pipe.EX; };
+
+
+// stor/load
+ register bit[MEM_OP_W]               r_exmem_memop               { pipeline = pipe.EX; };
+ signal bit [MEM_OP_W]                s_exmem_memop ;
+
+
+ register bit [32] r_exmem_Branch_Target_Address { pipeline = pipe.EX; };
+
+ register bit [32] r_exmem_JUMB_Target_Address { pipeline = pipe.EX; };
+
+
+
+ register bit [1]            r_exmem_jump            {pipeline = pipe.EX;};
+
+
+ register bit [32] r_memwb_Branch_Target_Address { pipeline = pipe.MEM; };
+
+
+
+ register bit [32] r_memwb_JUMB_Target_Address { pipeline = pipe.MEM; };
+
+ register bit [32] r_WB_JUMB_Target_Address { pipeline = pipe.WB; };
+
+
+ register bit [1]            r_memwb_jump            {pipeline = pipe.MEM;};
+
+
+ /* PC */
+ register bit [MADDR_W]              r_memwb_pc              { pipeline = pipe.MEM; };
+
+ signal bit   [MADDR_W]              s_memweb_alu_output;
+
+
+ register bit [PIPE_MUX_W]            r_memwb_pipe_mux            {pipeline = pipe.MEM;};
+ register bit [PIPE_MUX_W]            r_WB_pipe_mux            {pipeline = pipe.WB;};
+
+ ////IMMEDIATE
+ register bit [MADDR_W]             r_memwb_simm                {pipeline =pipe.MEM;};
+
+ // final output ALU
+ register bit [MWORD_W]              r_memwb_alu_out      { pipeline = pipe.MEM; };
+
+ //final  destnation
+ register bit [RF_XPR_W]             r_memwb_rd_index        { pipeline = pipe.MEM; };
+ register bit [RF_XPR_W]             r_memwb_rs1_index     { pipeline = pipe.MEM; };
+ register bit [RF_XPR_W]             r_memwb_rs2_index     { pipeline = pipe.MEM; };
+
+ register bit [ALU_OP_W]            r_memwb_alu_ops          {pipeline =pipe.MEM;};
+
+ register bit [RF_XPR_W]             r_WB_rd_index        { pipeline = pipe.WB; };
+
+ register bit [SRC_B_MUX_W]              r_memwb_ALUSrc1          {pipeline =pipe.MEM;};
+ register bit [SRC_B_MUX_W]              r_memwb_ALUSrc2          {pipeline =pipe.MEM;};
+
+
+ register bit [MADDR_W]             r_memwb_SrcA                {pipeline =pipe.MEM;};
+ register bit [MADDR_W]             r_memwb_SrcB                {pipeline =pipe.MEM;};
+
+ register bit [MWORD_W]              r_memwb_alu_output       { pipeline = pipe.MEM; };
+
+
+ /* Control Bits */
+ //RegWrite
+ register bit [CNTL_BIT_W]           r_memwb_RegWrite        { pipeline = pipe.MEM; };
+
+ register bit [CNTL_BIT_W]           r_WB_RegWrite        { pipeline = pipe.WB; };
+
+ //MemtoReg
+ register bit [1]                    r_memwb_MemtoReg        { pipeline = pipe.MEM; };
+
+ register bit [32]                   r_memwb_rs2_value         { pipeline = pipe.MEM; };
+ register bit [32]                   r_memwb_rs1_value         { pipeline = pipe.MEM; };
+
+ register bit[MEM_OP_W]               r_memwb_memop               { pipeline = pipe.MEM; };
+
+ // stor/load
+  register bit[MEM_OP_W]               r_mem_memop               { pipeline = pipe.MEM; };
+  signal bit [MEM_OP_W]                s_mem_memop ;
+  register bit [1]                r_memwb_Branch          {pipeline =pipe.MEM;};
+
+
+
+  // Operations
+  register bit[MEM_OP_W]         r_memwb_op   { pipeline = pipe.WB; };
+  signal bit[MEM_OP_W]           s_memwb_op;
+
+  register bit [32] r_wb_Branch_Target_Address { pipeline = pipe.WB; };
+
+  register bit [1] r_wb_jump { pipeline = pipe.WB; };
+
+
+
+
+
+
+
+
+
+  signal   bit[32]            s_wb_load;
+
+  // Operation result
+  signal   bit[WB_SRC_MUX_W]        s_wb_mux;
+  signal   bit[32]                  s_wb_result;
+
+
+
+
+
+ // -------------------------------------------------------------------------------------------------
+ // Pipeline control
+ // -------------------------------------------------------------------------------------------------
+ signal bit[1] s_fe_stall;
+ signal bit[1] s_id_stall;
+ signal bit[1] s_id_clear;
+ register bit[1] r_id_clear;
+ signal bit[1] s_ex_stall;
+ signal bit[1] s_ex_clear;
+ signal bit[1] s_mem_stall;
+ signal bit[1] s_mem_clear;
+ signal bit[1] s_wb_stall;
+ signal bit[1] s_wb_clear;
+
+
+

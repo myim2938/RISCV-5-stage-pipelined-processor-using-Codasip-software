@@ -1,0 +1,195 @@
+#include "ca_defines.hcodal"
+#include "config.hcodal"
+#include "debug.hcodal"
+
+
+event id: pipeline(pipe.ID)
+{
+
+     use isa_hw;
+     use id_output;
+     semantics
+     {
+         uint32 id_instr_temp;
+        // -----------------------------------------------------------------------------------------
+        // Instruction fetch finish
+        // -----------------------------------------------------------------------------------------
+
+         if_code.finish(CP_CMD_READ, id_instr_temp);
+
+         if(id_instr_temp == 0) s_ifid_inst = 0x13;
+         else s_ifid_inst = id_instr_temp;
+
+         s_id_stall = 0;
+
+         // opcode
+         s_id_opc = s_ifid_inst[6..0];
+
+         s_id_itype_imm12= s_ifid_inst[31..20];
+
+         s_id_stype_imm12= s_ifid_inst[31..25] ::s_ifid_inst[11..7];
+
+         s_id_btype_imm12 = (s_ifid_inst [31..31]::s_ifid_inst[7..7]::s_ifid_inst[30..25]::s_ifid_inst[11..8]) * 2;
+
+
+         s_id_utype_imm20=s_ifid_inst[31..12];
+
+         s_id_jtype_imm20=(s_ifid_inst[31..31]::s_ifid_inst[19..12]::s_ifid_inst[20..20]::s_ifid_inst[30..21])*2;
+
+
+         s_id_funct3 = s_ifid_inst[14..12];
+
+         s_id_funct7 =s_ifid_inst[31..25];
+
+         s_rs1 =s_ifid_inst[19..15];
+         s_rs2 =s_ifid_inst[24..20];
+         S_rd =s_ifid_inst[11..7];
+         s_id_opc_full =s_id_funct7::s_id_funct3::s_id_opc;
+
+               r_idex_rs1_index = s_rs1;
+
+
+
+               r_idex_rs2_index = s_rs2;
+               r_idex_rd_index = S_rd;
+
+
+
+
+
+
+
+         };
+
+         decoders
+         {
+             { isa_hw(s_id_opc_full); }
+         };
+
+         // Event activated after decoding instruction
+         timing
+         {
+             id_output();
+         };
+
+
+     };
+
+
+
+
+
+
+
+
+event id_output: pipeline(pipe.ID)
+{
+
+    semantics
+    {
+
+
+        //Rs1 value
+        s_id_rs1_value = rf_xpr[s_rs1];
+
+        //Rs2 value
+        s_id_rs2_value = rf_xpr[s_rs2];
+
+
+         switch (s_id_mux_imm){
+             case ITYPE_IMM12:
+                 r_idex_simm = (int32)(int12 )s_id_itype_imm12;
+                 break ;
+             case BTYPE_IMM12:
+                 r_idex_simm= (int32)(int12 ) s_id_btype_imm12;
+                 break ;
+             case STYPE_IMM12:
+
+                 r_idex_simm =(int32)(int12 ) s_id_stype_imm12;
+                 break ;
+             case UTYPE_IMM20:
+                 r_idex_simm = (int32)(int20 )s_id_utype_imm20;
+                 break ;
+
+             case JTYPE_IMM20:
+                 r_idex_simm  =(int32)(int20 ) s_id_jtype_imm20;
+                 break ;
+
+             default:
+                 r_idex_simm = (int32)(int12 )s_id_itype_imm12;
+                 break;
+
+         }
+
+
+         r_idex_alu_ops = s_idex_alu_ops;
+
+         r_idex_Branch = s_exmem_Branch;
+
+         switch(r_idex_ALUSrc2)
+                {
+                    case SRC_B_XPR:
+                        r_idex_SrcB = r_idex_rs2_value;
+
+                        break;
+
+                    case SRC_B_IMM:
+                        r_idex_SrcB = r_idex_simm;
+                        break;
+                }
+
+
+
+
+         switch(r_idex_ALUSrc1)
+                        {
+                            case SRC_A_XPR:
+                                r_idex_SrcA = r_idex_rs1_value;
+
+                                break;
+
+                            case SRC_A_PC:
+                                r_idex_SrcA = r_idex_pc;
+                                break;
+                        }
+
+
+
+         r_idex_RegWrite =s_idex_RegWrite;
+
+
+         r_idex_MemtoReg=s_idex_MemtoReg;
+         r_idex_MemRead=s_idex_MemRead;
+         r_idex_MemWrite=s_idex_MemWrite;
+
+         r_idex_rs1_value= s_id_rs1_value;
+           r_idex_rs2_value = s_id_rs2_value;
+
+           r_idex_pipe_mux = s_id_pipe_mux;
+
+r_idex_jump = s_jump;
+
+         //  r_idex_SrcA = r_idex_rs1_value;
+
+
+//Passing
+
+
+           r_idex_pc = r_ifid_pc;
+
+
+
+         /* ALU Src1 and Src2 mux */
+         r_idex_ALUSrc1 = s_idex_ALUSrc1;
+         r_idex_ALUSrc2 = s_idex_ALUSrc2;
+
+
+         // memory opration
+         r_idex_memop =s_idex_memop;
+
+
+
+    };
+};
+
+

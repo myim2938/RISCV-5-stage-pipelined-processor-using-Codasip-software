@@ -1,0 +1,49 @@
+#include "config.hcodal"
+#include "debug.hcodal"
+
+// -------------------------------------------------------------------------------------------------
+// Fetch stag
+// -------------------------------------------------------------------------------------------------
+event fe : pipeline(pipe.FE)
+{
+semantics
+{
+
+    if(PCSrc != 0)
+    {
+
+        if_code.request(CP_CMD_READ, r_pc);
+        s_fe_stall = 0;
+
+        r_ifid_pc = r_pc;
+        r_pc = r_memwb_JUMB_Target_Address;
+
+
+    }
+
+
+
+    else if( r_wb_jump != 0){
+
+    if_code.request(CP_CMD_READ, r_pc);
+    s_fe_stall = 0;
+
+    r_ifid_pc = r_pc;
+    r_pc = r_exmem_Branch_Target_Address;
+
+    }
+
+
+    else
+    {
+        if_code.request(CP_CMD_READ, r_pc);
+        s_fe_stall = 0;
+
+        r_ifid_pc = r_pc;
+        r_pc += RISCV_INSTR_SIZE;
+
+
+    }
+};
+};
+
